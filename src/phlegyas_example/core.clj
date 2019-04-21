@@ -64,4 +64,4 @@
 (defn -main
   "Start a server, listening on port 10001."
   [& args]
-  (tcp/start-server entrypoint {:port 10001 :join? true}))
+  (tcp/start-server entrypoint {:port (parse-int (first args)) :join? true}))
