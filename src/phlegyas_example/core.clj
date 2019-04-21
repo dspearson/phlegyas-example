@@ -17,6 +17,16 @@
 ;; be `:Twrite`, and for read operations, `:Tread`. Also useful is the `frame-offset`
 ;; and `frame-count` variables, indicating the read offset and requested byte count.
 ;; also, `frame-data`, which will include any data sent during a write call.
+;;
+;; functions called on files have arity 3, taking in the stat structure for itself,
+;; the frame data that it was invoked with, and the global state atom.
+;;
+;; these three should be plenty to mutate your environment and respond ad required.
+;; note however the default vfs is not yet fully fleshed out. certain operations,
+;; such as `:Tcreate`, `:Twstat`, `:Tremove`, etc., are not implemented. however,
+;; you can replace the entire state machine (or only portions thereof) as you see
+;; fit, and or rip out the entire VFS / state machine layer. i've tried to make it
+;; somewhat sane.
 
 (defn another-file-function
   "This will execute a shell command and return the bytes."
