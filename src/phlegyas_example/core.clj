@@ -1,6 +1,8 @@
 (ns phlegyas-example.core
   (:require [phlegyas.core :as pcore]
             [phlegyas.vfs :as vfs]
+            [phlegyas.state :as pstate]
+            [phlegyas.frames :refer :all]
             [phlegyas.util :refer :all]
             [clojure.java.shell :as shell]
             [aleph.tcp :as tcp]
@@ -61,13 +63,30 @@
         (vfs/insert-file! root-path my-file)
         (vfs/insert-file! root-path another-file))))
 
+(defn start-server
+  "This creates a file server, taking in an inport and an outport, and a filesystem
+  constructor function. `state` is an atomic map that is updated depending on incoming
+  messages, and can be read and modified from within file function calls.
+
+  `pstate/state-handler` is a provided state machine that will handle most calls and
+  update the state for us, and assemble replies to inject into `outgoing-frame-stream`,
+  which is connected via `assemble-packet` for correct data encoding before going out
+  over the wire."
+  [in out root-filesystem-constructor]
+  (let [state (atom {:root-filesystem root-filesystem-constructor})
+        incoming-frame-stream (s/stream)
+        outgoing-frame-stream (s/stream)
+        _ (frame-assembler in incoming-frame-stream)]
+    (s/connect-via outgoing-frame-stream #(s/put! out (assemble-packet %)) out)
+    (pstate/consume-with-state incoming-frame-stream outgoing-frame-stream state #'pstate/state-handler)))
+
 (defn entrypoint
   "Application entrypoint. Called on every established TCP connection. Starts a 9P server
   instance, with the `my-filesystem` function called for the root filesystem."
   [socket info]
   (let [in (s/stream)
         out (s/stream)
-        _ (pcore/server! in out :root-filesystem-constructor my-filesystem)]
+        _ (start-server in out my-filesystem)]
     (s/connect socket in)
     (s/connect out socket)))
 
