@@ -86,11 +86,12 @@
   [socket info]
   (let [in (s/stream)
         out (s/stream)
-        _ (start-server in out my-filesystem)]
+        _ (pcore/server! in out :root-filesystem-constructor my-filesystem)]
     (s/connect socket in)
     (s/connect out socket)))
 
 (defn -main
   "Start a server, listening on port 10001."
   [& args]
+
   (tcp/start-server entrypoint {:port (parse-int (first args)) :join? true}))
